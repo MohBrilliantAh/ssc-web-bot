@@ -2,90 +2,767 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSC Telkom University Surabaya</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Student Service Center | Telkom University Surabaya</title>
+    <!-- Google Fonts: Inter + Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #0f172a;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --maroon: #8B1E1E;
+            --maroon-dark: #6B1515;
+            --maroon-light: #A54545;
+            --maroon-soft: #fdf2f2;
+            --gray-50: #fafafc;
+            --gray-100: #f4f6f9;
+            --gray-200: #e9edf2;
+            --gray-600: #5a6a7e;
+            --gray-800: #1e2a3e;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
+            --shadow-md: 0 8px 20px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.02);
+            --shadow-lg: 0 20px 35px -8px rgba(0,0,0,0.08);
+            --shadow-xl: 0 30px 40px -15px rgba(0,0,0,0.1);
+            --radius-xl: 1.25rem;
+            --radius-2xl: 2rem;
+        }
+
+        /* Navbar Premium */
+        .navbar {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(233,237,242,0.6);
+            padding: 0.85rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-area img {
+            height: 52px;
+            width: auto;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+        }
+
+        .logo-text h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--maroon);
+            letter-spacing: -0.3px;
+        }
+
+        .logo-text p {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            letter-spacing: 0.3px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--maroon);
+        }
+
+        .btn-login {
+            background: var(--maroon);
+            color: white !important;
+            padding: 0.5rem 1.4rem;
+            border-radius: 40px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-login:hover {
+            background: var(--maroon-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Hero Section dengan gambar baru */
+        .hero {
+            background: linear-gradient(120deg, #ffffff 0%, var(--maroon-soft) 100%);
+            padding: 3rem 2rem 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .hero-content {
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--maroon);
+            color: white;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .hero-content h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            color: #0b1727;
+            margin-bottom: 1rem;
+        }
+
+        .hero-content h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: 1.8rem;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-mini {
+            text-align: left;
+        }
+
+        .stat-mini .number {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--maroon);
+        }
+
+        .hero-image {
+            flex: 1;
+            text-align: center;
+        }
+
+        .hero-image img {
+            max-width: 100%;
+            border-radius: 2rem;
+            box-shadow: var(--shadow-xl);
+            transition: transform 0.3s;
+        }
+
+        .hero-image img:hover {
+            transform: scale(1.02);
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: white;
+            padding: 3rem 2rem;
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .stat-card {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--maroon);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Section Umum */
+        .section {
+            padding: 4rem 2rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--maroon);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--gray-600);
+            margin-bottom: 2.5rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* About */
+        .about-card {
+            background: var(--gray-100);
+            border-radius: var(--radius-2xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid white;
+        }
+
+        .about-card p {
+            line-height: 1.7;
+            text-align: justify;
+        }
+
+        /* Tata Tertib Grid */
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .rule-item {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+
+        .rule-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .rule-number {
+            background: var(--maroon);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* Guide */
+        .guide-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        .guide-card {
+            flex: 1;
+            min-width: 280px;
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 1.8rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-200);
+            transition: transform 0.2s;
+        }
+
+        .guide-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .guide-card h4 {
+            font-size: 1.4rem;
+            color: var(--maroon);
+            margin-bottom: 1rem;
+        }
+
+        .guide-card ul {
+            list-style: none;
+        }
+
+        .guide-card li {
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Unit Grid */
+        .unit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .unit-item {
+            background: white;
+            padding: 0.9rem;
+            border-radius: 1rem;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        /* Contact & Footer */
+        .contact-section {
+            background: #0f172a;
+            color: white;
+            padding: 3rem 2rem;
+            margin-top: 2rem;
+        }
+
+        .contact-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 2rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .contact-info, .important-links, .affiliation {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .contact-info h4, .important-links h4, .affiliation h4 {
+            font-size: 1.1rem;
+            border-left: 3px solid var(--maroon);
+            padding-left: 0.7rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-info p {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        .important-links a, .affiliation a {
+            color: #cbd5e1;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .important-links a:hover, .affiliation a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding: 1.5rem;
+            background: #0b1120;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+
+        /* Chat Widget */
+        .chat-widget {
+            position: fixed;
+            bottom: 1.8rem;
+            right: 1.8rem;
+            z-index: 1000;
+        }
+
+        .chat-toggle {
+            background: var(--maroon);
+            border: none;
+            width: 58px;
+            height: 58px;
+            border-radius: 29px;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.06);
+            background: var(--maroon-dark);
+        }
+
+        .chat-container {
+            position: absolute;
+            bottom: 76px;
+            right: 0;
+            width: 360px;
+            height: 520px;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0);
+            opacity: 0;
+            transform-origin: bottom right;
+            transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s;
+            pointer-events: none;
+            border: 1px solid var(--gray-200);
+        }
+
+        .chat-container.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .chat-header {
+            background: var(--maroon);
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: var(--gray-100);
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 0.6rem 1rem;
+            border-radius: 1.2rem;
+            font-size: 0.85rem;
+        }
+
+        .user-msg {
+            align-self: flex-end;
+            background: var(--maroon);
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .bot-msg {
+            align-self: flex-start;
+            background: white;
+            box-shadow: var(--shadow-sm);
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 0.75rem;
+            border-top: 1px solid var(--gray-200);
+            gap: 0.5rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            border: 1px solid var(--gray-200);
+            border-radius: 2rem;
+            padding: 0.6rem 1rem;
+            font-family: inherit;
+        }
+
+        .chat-input button {
+            background: var(--maroon);
+            border: none;
+            width: 42px;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 0.75rem 1rem; }
+            .hero-content h2 { font-size: 2rem; }
+            .hero-container { flex-direction: column; text-align: center; }
+            .hero-stats { justify-content: center; }
+            .stats-section { flex-direction: column; align-items: center; }
+            .chat-container { width: 90vw; right: -5px; bottom: 80px; }
+        }
+    </style>
 </head>
 <body>
 
+    <!-- Navbar -->
     <nav class="navbar">
-        <div class="nav-logo">
-            <span class="logo-bold">Telkom</span> University <span class="logo-sub">Surabaya</span>
+        <div class="logo-area">
+            <img src="/logo-telu-sby-d8fd1851.png" alt="Logo Telkom University Surabaya" onerror="this.onerror=null; this.src='https://placehold.co/52x52/8B1E1E/white?text=TelU';">
+            <div class="logo-text">
+                <h1>Student Service Center</h1>
+                <p>Telkom University Surabaya</p>
+            </div>
         </div>
         <div class="nav-links">
-            <a href="#" class="active">Beranda</a>
+            <a href="#">Beranda</a>
             <a href="#layanan">Layanan</a>
-            <a href="#">Tentang Kami</a>
-            <a href="login.html" class="login-nav-btn">Login Staf</a>
+            <a href="#tata-tertib">Tata Tertib</a>
+            <a href="#kontak">Kontak</a>
+            <a href="login.html" class="btn-login">Admin Area</a>
         </div>
     </nav>
 
-    <header class="hero-section">
-        <div class="hero-content">
-            <span class="badge">Layanan Terpadu Mahasiswa</span>
-            <h1>Student Service Center</h1>
-            <p>Pusat bantuan dan layanan administrasi akademik terintegrasi untuk mendukung kelancaran studi mahasiswa Telkom University Surabaya.</p>
-            <div class="hero-buttons">
-                <a href="#layanan" class="btn-primary">Lihat Layanan</a>
-                <button id="hero-chat-btn" class="btn-secondary">Tanya Asisten AI</button>
+    <!-- Hero Section dengan gambar baru -->
+    <header class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">Student Service Center</div>
+                <h2>Datang. Buat Tiket. Proses.</h2>
+                <h3>Pelayanan Senin - Jumat 9.00 - 15.00</h3>
+                <div class="hero-stats">
+                    <div class="stat-mini"><span class="number">2000+</span><br>Tiket Dilayani</div>
+                    <div class="stat-mini"><span class="number">6 unit</span><br>Layanan Tersebar</div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="/foto-home-new-f1123516.png" alt="Suasana SSC Telkom University Surabaya" onerror="this.onerror=null; this.src='https://placehold.co/600x400/f0f2f5/8B1E1E?text=Gambar+SSC';">
             </div>
         </div>
     </header>
 
-    <section id="layanan" class="features-section">
-        <div class="section-title">
-            <h2>Layanan Akademik Utama</h2>
-            <p>Berbagai kemudahan penanganan administrasi yang dikelola secara profesional.</p>
+    <!-- Statistik -->
+    <div class="stats-section">
+        <div class="stat-card"><div class="stat-number">2000+</div><div class="stat-label">Tiket yang sudah dilayani</div></div>
+        <div class="stat-card"><div class="stat-number">6 unit</div><div class="stat-label">Layanan Tersebar</div></div>
+        <div class="stat-card"><div class="stat-number">50+</div><div class="stat-label">Jenis Layanan</div></div>
+        <div class="stat-card"><div class="stat-number">1500+</div><div class="stat-label">Pengguna Layanan SSC</div></div>
+    </div>
+
+    <!-- Apa itu SSC -->
+    <section class="section">
+        <h2 class="section-title">Apa sih SSC itu?</h2>
+        <div class="about-card">
+            <p>Student Service Center adalah sebuah unit atau pusat layanan yang beroperasi di Universitas Telkom Surabaya dengan tujuan untuk memberikan pelayanan terkait permasalahan administrasi mahasiswa. SSC memberikan layanan terpadu yang disediakan untuk memberikan kemudahan akses bagi mahasiswa untuk memperoleh layanan administrasi melalui satu pintu.</p>
         </div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="icon">📝</div>
-                <h3>Perwalian & KRS</h3>
-                <p>Konsultasi rencana studi secara berkala bersama Dosen Wali untuk hasil studi optimal.</p>
+    </section>
+
+    <!-- Tata Tertib SSC -->
+    <section id="tata-tertib" class="section" style="background: var(--gray-100); border-radius: 2rem; margin: 0 auto 2rem;">
+        <h2 class="section-title">Tata Tertib SSC</h2>
+        <div class="rules-grid">
+            <div class="rule-item"><span class="rule-number">1</span> Wajib membawa KTM</div>
+            <div class="rule-item"><span class="rule-number">2</span> Pakaian sopan berkerah & memakai sepatu</div>
+            <div class="rule-item"><span class="rule-number">3</span> Menjaga etika & sopan santun</div>
+            <div class="rule-item"><span class="rule-number">4</span> Mengambil antrian melalui mesin antrian</div>
+            <div class="rule-item"><span class="rule-number">5</span> Pelayanan diproses selama jam operasional</div>
+        </div>
+    </section>
+
+    <!-- Panduan Pengajuan Layanan -->
+    <section id="layanan" class="section">
+        <h2 class="section-title">Panduan Pengajuan Layanan</h2>
+        <div class="guide-wrapper">
+            <div class="guide-card">
+                <h4>📋 Offline</h4>
+                <ul>
+                    <li>✅ Mahasiswa Datang dengan membawa KTM dan Mengambil Antrian</li>
+                    <li>✅ Mahasiswa menunggu antrian sampai operator memanggil</li>
+                    <li>✅ Mahasiswa berkonsultasi dan akan mendapatkan informasi tindak lanjut layanan melalui WA dan E-mail</li>
+                    <li>✅ Jika sudah menerima WA dan E-mail, Mahasiswa bisa datang kembali ke SSC</li>
+                </ul>
             </div>
-            <div class="feature-card">
-                <div class="icon">🌴</div>
-                <h3>Cuti Akademik</h3>
-                <p>Pengajuan izin nonaktif resmi per semester dengan prosedur yang terstruktur.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon">🎓</div>
-                <h3>Sidang & Kelulusan</h3>
-                <p>Pendaftaran tugas akhir, kriteria predikat kelulusan, dan pengurusan yudisium.</p>
+            <div class="guide-card">
+                <h4>💻 Online</h4>
+                <ul>
+                    <li>🔹 Akses portal SSC online</li>
+                    <li>🔹 Ajukan tiket layanan</li>
+                    <li>🔹 Tim akan merespon maksimal 2x24 jam</li>
+                    <li>🔹 Pantau status tiket melalui email</li>
+                </ul>
             </div>
         </div>
     </section>
 
-    <div id="chat-widget">
-        <div id="chat-header">
-            <div class="chat-title">
-                <span class="status-dot"></span> Asisten AI SSC
-            </div>
-            <span id="chat-toggle-icon">▲</span>
+    <!-- Informasi Unit -->
+    <section class="section" style="background: var(--gray-100); border-radius: 2rem; margin: 0 auto 2rem;">
+        <h2 class="section-title">Informasi Unit</h2>
+        <div class="unit-grid">
+            <div class="unit-item">Akademik</div>
+            <div class="unit-item">Pusat Bahasa & Perpustakaan</div>
+            <div class="unit-item">Keuangan</div>
+            <div class="unit-item">PuTi</div>
+            <div class="unit-item">Kemahasiswaan</div>
+            <div class="unit-item">Logistik</div>
         </div>
+        <div class="about-card" style="margin-top: 2rem;">
+            <p><strong>Informasi Akademik</strong> — Merupakan unit yang bertugas mengelola administrasi akademik yang mencakup kegiatan layanan administrasi akademik, pusat bahasa, dan perpustakaan. Informasi lengkap mengenai Unit Akademik, silakan kunjungi: <a href="#" style="color: var(--maroon); text-decoration: none;">https://akademik.telkomuniversity.ac.id</a></p>
+        </div>
+    </section>
 
-        <div id="chat-body">
-            <div class="chat-messages" id="chat-messages">
-                <div class="msg bot-msg">Selamat datang! Saya Asisten AI SSC Telkom University Surabaya. Ada yang bisa saya bantu terkait layanan akademik hari ini?</div>
+    <!-- Kontak & Footer -->
+    <section id="kontak" class="contact-section">
+        <div class="contact-grid">
+            <div class="contact-info">
+                <h4>Kontak Kami</h4>
+                <p><span class="material-symbols-outlined" style="font-size: 1.2rem;">location_on</span> Lantai 2, Gedung Utama, Jl.Ketintang No. 156, Surabaya</p>
+                <p><span class="material-symbols-outlined" style="font-size: 1.2rem;">call</span> (+62) 811-3221-2000</p>
+                <p><span class="material-symbols-outlined" style="font-size: 1.2rem;">email</span> sscsby@telkomuniversity.ac.id</p>
             </div>
-            
-            <div class="chat-input-area">
-                <input type="text" id="user-input" placeholder="Ketik pesan..." autocomplete="off">
-                <button id="send-btn">Kirim</button>
+            <div class="important-links">
+                <h4>Tautan Penting</h4>
+                <a href="#">Pusat Teknologi Informasi</a>
+                <a href="#">Service Desk</a>
+                <a href="#">Bagian Administrasi Akademik</a>
+                <a href="#">Kemahasiswaan</a>
+                <a href="#">Career Development Center</a>
+            </div>
+            <div class="affiliation">
+                <h4>Afilasi</h4>
+                <a href="#">Yayasan Pendidikan Telkom</a>
+                <a href="#">Tel-U Bandung</a>
+                <a href="#">Tel-U Jakarta</a>
+                <a href="#">Tel-U Surabaya</a>
+                <a href="#">Tel-U Purwokerto</a>
+            </div>
+        </div>
+    </section>
+    <div class="footer-bottom">
+        © 2026 - SSC Telkom University Surabaya 2.0
+    </div>
+
+    <!-- Chat Widget AI -->
+    <div class="chat-widget">
+        <button class="chat-toggle" id="chatToggleBtn">
+            <span class="material-symbols-outlined">chat</span>
+        </button>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <span>🤖 Asisten AI SSC</span>
+                <button id="closeChatBtn" style="background:none; border:none; color:white; cursor:pointer; font-size:1.2rem;">✕</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-msg">Halo! Saya AI SSC Tel-U. Ada yang bisa saya bantu?</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Tanyakan sesuatu...">
+                <button id="sendChatBtn">➤</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script>
-        // Membuat tombol di hero section bisa membuka chat widget otomatis
-        document.getElementById('hero-chat-btn').addEventListener('click', () => {
-            const chatBody = document.getElementById('chat-body');
-            const chatToggleIcon = document.getElementById('chat-toggle-icon');
-            chatBody.style.display = 'flex';
-            chatToggleIcon.textContent = '▼';
-            document.getElementById('user-input').focus();
-        });
+        // Chat widget logic
+        const chatContainer = document.getElementById('chatContainer');
+        const toggleBtn = document.getElementById('chatToggleBtn');
+        const closeChat = document.getElementById('closeChatBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendChatBtn');
+
+        function openChat() { chatContainer.classList.add('open'); }
+        function closeChatFunc() { chatContainer.classList.remove('open'); }
+        toggleBtn.onclick = () => chatContainer.classList.contains('open') ? closeChatFunc() : openChat();
+        closeChat.onclick = closeChatFunc;
+
+        function addMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isUser ? 'user-msg' : 'bot-msg'}`;
+            msgDiv.textContent = text;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        let typingTimeout = null;
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot-msg';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = 'mengetik<span style="animation: pulse 1.4s infinite;">...</span>';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        function hideTyping() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        async function sendMessage() {
+            const query = chatInput.value.trim();
+            if (!query) return;
+            addMessage(query, true);
+            chatInput.value = '';
+            showTyping();
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: query })
+                });
+                const data = await response.json();
+                hideTyping();
+                addMessage(data.reply || 'Maaf, saya tidak bisa menjawab.', false);
+            } catch (err) {
+                hideTyping();
+                addMessage('Gagal terhubung ke server AI.', false);
+            }
+        }
+
+        sendBtn.onclick = sendMessage;
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
     </script>
 </body>
 </html>

@@ -3,192 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin SSC</title>
+    <title>Admin Dashboard | SSC Telkom University</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1" />
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b31217; padding-bottom: 10px; margin-bottom: 20px; }
-        h1 { color: #b31217; margin: 0; }
-        .logout-btn { padding: 8px 15px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .crud-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .form-inline { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-weight: 600; font-size: 0.9rem; color: #444; }
-        .form-inline input, .form-inline textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
-        .form-inline textarea { height: 80px; resize: vertical; }
-        .save-btn { background-color: #01754f; color: white; border: none; border-radius: 4px; padding: 12px 20px; font-weight: bold; cursor: pointer; align-self: flex-start; transition: background-color 0.3s; }
-        .save-btn:hover { background-color: #005237; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-top: 10px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #0a66c2; color: white; }
-        .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; font-size: 0.85rem; }
-        .edit-btn { background-color: #f0ad4e; color: white; }
-        .edit-btn:hover { background-color: #ec971f; }
-        .delete-btn { background-color: #d9534f; color: white; }
-        .delete-btn:hover { background-color: #c9302c; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f7f9fc;
+            color: #1e293b;
+        }
+        /* Navbar Admin */
+        .admin-nav {
+            background: white;
+            backdrop-filter: blur(12px);
+            border-bottom: 2px solid #8B1E1E;
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-area img {
+            height: 44px;
+            width: auto;
+        }
+        .logo-area h2 {
+            font-size: 1.3rem;
+            color: #8B1E1E;
+        }
+        .logout-btn {
+            background: #8B1E1E;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.3rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #6B1515;
+            transform: translateY(-1px);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        /* Card Premium */
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            border: 1px solid #edf2f7;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #8B1E1E;
+        }
+        /* Upload Area */
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 1.25rem;
+            padding: 2rem;
+            text-align: center;
+            background: #fefaf5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone.drag-over {
+            border-color: #8B1E1E;
+            background: #fff5f5;
+        }
+        .file-input {
+            display: none;
+        }
+        .upload-btn {
+            background: #8B1E1E;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .upload-btn:hover {
+            background: #6B1515;
+        }
+        .progress {
+            display: none;
+            margin-top: 1rem;
+            color: #8B1E1E;
+            font-weight: 500;
+        }
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #1e293b;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 2rem;
+            z-index: 200;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.2s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Form CRUD */
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #8B1E1E;
+            box-shadow: 0 0 0 3px rgba(139,30,30,0.1);
+        }
+        .save-btn {
+            background: #8B1E1E;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .save-btn:hover {
+            background: #6B1515;
+            transform: translateY(-1px);
+        }
+        /* Table Premium */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid #edf2f7;
+        }
+        th {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f8fafc;
+        }
+        tr:hover td {
+            background: #fafcff;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.8rem;
+            margin: 0 0.2rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .edit-btn {
+            color: #3b82f6;
+        }
+        .edit-btn:hover {
+            background: #eff6ff;
+        }
+        .delete-btn {
+            color: #ef4444;
+        }
+        .delete-btn:hover {
+            background: #fef2f2;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 0 1rem; }
+            th, td { padding: 0.75rem; font-size: 0.85rem; }
+            .admin-nav { flex-direction: column; gap: 0.5rem; text-align: center; }
+        }
     </style>
 </head>
 <body>
-
-    <div class="header">
-        <h1>Dashboard Manajemen Dokumen SSC</h1>
-        <button class="logout-btn" id="logout-btn">Keluar</button>
+    <div class="admin-nav">
+        <div class="logo-area">
+            <img src="/logo-telu-sby-d8fd1851.png" alt="Logo Telkom University" onerror="this.onerror=null; this.src='https://placehold.co/44x44/8B1E1E/white?text=TelU';">
+            <h2>Admin Dashboard SSC</h2>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Keluar</button>
     </div>
 
-    <div class="crud-container">
-        <h3>Tambah / Edit Dokumen Akademik</h3>
-        <div class="form-inline">
-            <div class="form-group">
-                <label for="doc-source">Sumber Dokumen</label>
-                <input type="text" id="doc-source" placeholder="Contoh: Pedoman Akademik 2024 - Bab Skripsi">
+    <div class="container">
+        <!-- Upload PDF Section -->
+        <div class="card">
+            <div class="card-header">
+                <span class="material-symbols-outlined">cloud_upload</span> Unggah Dokumen PDF
+            </div>
+            <div class="upload-zone" id="dropZone">
+                <span class="material-symbols-outlined" style="font-size: 2.5rem; color: #8B1E1E;">upload_file</span>
+                <p style="margin-top: 0.5rem;">Seret & lepas file PDF di sini atau klik untuk memilih</p>
+                <input type="file" id="fileInput" accept=".pdf" class="file-input">
+                <button class="upload-btn" id="customUploadBtn">Pilih File</button>
+                <div class="progress" id="uploadProgress">⏳ Memproses PDF dengan AI, harap tunggu...</div>
+            </div>
+        </div>
+
+        <!-- CRUD Dokumen Manual -->
+        <div class="card">
+            <div class="card-header">
+                <span class="material-symbols-outlined">edit_note</span> Kelola Basis Pengetahuan
             </div>
             <div class="form-group">
-                <label for="doc-text">Isi Konten Informasi</label>
-                <textarea id="doc-text" placeholder="Contoh: Syarat pendaftaran sidang skripsi mahasiswa adalah telah lulus minimal 138 SKS..."></textarea>
+                <input type="text" id="docSource" placeholder="Sumber dokumen (contoh: Pedoman Skripsi 2025)">
             </div>
-            <button class="save-btn" id="save-btn">Simpan Data</button>
+            <div class="form-group">
+                <textarea id="docText" rows="3" placeholder="Isi konten informasi akademik..."></textarea>
+            </div>
+            <button class="save-btn" id="saveDocBtn">Simpan Data</button>
+        </div>
+
+        <!-- Tabel Dokumen -->
+        <div class="card">
+            <div class="card-header">
+                <span class="material-symbols-outlined">database</span> Daftar Informasi
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Sumber</th><th>Konten</th><th>Aksi</th></tr>
+                    </thead>
+                    <tbody id="docTableBody">
+                        <tr><td colspan="3" style="text-align: center;">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <h3>Daftar Informasi di Database</h3>
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 25%;">Sumber Dokumen</th>
-                <th style="width: 60%;">Isi Konten Informasi</th>
-                <th style="width: 15%;">Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="document-table-body">
-            <tr>
-                <td colspan="3" style="text-align:center; color:#999;">Memuat data dari database...</td>
-            </tr>
-        </tbody>
-    </table>
-
     <script>
-        // Proteksi Halaman: Jika belum login, tendang kembali ke halaman login
+        // ============ AUTHENTICATION ============
         if (localStorage.getItem('isLoggedIn') !== 'true') {
             window.location.href = 'login.html';
         }
-
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('logoutBtn').onclick = () => {
             localStorage.removeItem('isLoggedIn');
             window.location.href = 'login.html';
-        });
+        };
 
-        // Variabel penanda mode Edit atau Tambah Baru
+        // ============ GLOBAL VARIABLES ============
         let editModeId = null;
+        const sourceInput = document.getElementById('docSource');
+        const textInput = document.getElementById('docText');
+        const saveBtn = document.getElementById('saveDocBtn');
+        const tableBody = document.getElementById('docTableBody');
 
-        const docSourceInput = document.getElementById('doc-source');
-        const docTextInput = document.getElementById('doc-text');
-        const saveBtn = document.getElementById('save-btn');
-        const tableBody = document.getElementById('document-table-body');
+        // ============ HELPER FUNCTIONS ============
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = isError ? '#dc2626' : '#10b981';
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
 
-        // Ambil Data dari Backend (Load Table)
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // ============ LOAD DATA (GET /api/documents) ============
         async function loadDocuments() {
             try {
                 const response = await fetch('/api/documents');
-                const documents = await response.json();
-                
-                tableBody.innerHTML = ''; 
-
-                if(documents.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">Belum ada data aturan di database. Silakan tambah data di atas.</td></tr>`;
+                if (!response.ok) throw new Error('Gagal fetch data');
+                const docs = await response.json();
+                if (!docs.length) {
+                    tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Belum ada data</td></tr>';
                     return;
                 }
-
-                documents.forEach(doc => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${doc.source}</strong></td>
-                        <td>${doc.text}</td>
+                // Render tabel
+                tableBody.innerHTML = docs.map(doc => `
+                    <tr>
+                        <td><strong>${escapeHtml(doc.source)}</strong></td>
+                        <td>${escapeHtml(doc.text.substring(0, 120))}${doc.text.length > 120 ? '...' : ''}</td>
                         <td>
-                            <button class="action-btn edit-btn" onclick="prepareEdit('${doc.id}', '${escapeHtml(doc.source)}', '${escapeHtml(doc.text)}')">Edit</button>
-                            <button class="action-btn delete-btn" onclick="deleteDocument('${doc.id}')">Hapus</button>
+                            <button class="action-btn edit-btn" data-id="${doc.id}" data-source="${escapeHtml(doc.source)}" data-text="${escapeHtml(doc.text)}">✏️ Edit</button>
+                            <button class="action-btn delete-btn" data-id="${doc.id}">🗑️ Hapus</button>
                         </td>
-                    `;
-                    tableBody.appendChild(tr);
+                    </tr>
+                `).join('');
+
+                // Attach event listeners for edit buttons
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        const source = btn.getAttribute('data-source');
+                        const text = btn.getAttribute('data-text');
+                        editModeId = id;
+                        sourceInput.value = source;
+                        textInput.value = text;
+                        saveBtn.textContent = 'Perbarui Data';
+                        saveBtn.style.background = '#f0ad4e';
+                        showToast('Mode Edit: ubah data lalu klik Perbarui', false);
+                    });
                 });
-            } catch (error) {
-                console.error("Gagal memuat tabel:", error);
-                tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">Gagal memuat data dari server.</td></tr>`;
+                // Attach event listeners for delete buttons
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const id = btn.getAttribute('data-id');
+                        if (!confirm('Apakah Anda yakin ingin menghapus dokumen ini?')) return;
+                        try {
+                            const res = await fetch(`/api/documents/${id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                showToast('Dokumen berhasil dihapus', false);
+                                loadDocuments(); // refresh tabel
+                                if (editModeId === id) {
+                                    editModeId = null;
+                                    sourceInput.value = '';
+                                    textInput.value = '';
+                                    saveBtn.textContent = 'Simpan Data';
+                                    saveBtn.style.background = '#8B1E1E';
+                                }
+                            } else {
+                                showToast('Gagal menghapus dokumen', true);
+                            }
+                        } catch (err) {
+                            showToast('Error: ' + err.message, true);
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat data</td></tr>';
             }
         }
 
-        // Fungsi Tombol Simpan (Handle Create & Update)
+        // ============ SAVE (POST or PUT) ============
         saveBtn.addEventListener('click', async () => {
-            const source = docSourceInput.value.trim();
-            const text = docTextInput.value.trim();
-
+            const source = sourceInput.value.trim();
+            const text = textInput.value.trim();
             if (!source || !text) {
-                alert("Semua kolom input wajib diisi!");
+                showToast('Source dan text wajib diisi', true);
                 return;
             }
-
-            let url = '/api/documents';
-            let method = 'POST';
-
-            if (editModeId) {
-                url = `/api/documents/${editModeId}`;
-                method = 'PUT';
-            }
-
+            const url = editModeId ? `/api/documents/${editModeId}` : '/api/documents';
+            const method = editModeId ? 'PUT' : 'POST';
             try {
                 const response = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ source, text })
                 });
-
                 if (response.ok) {
-                    // Reset Form
-                    docSourceInput.value = '';
-                    docTextInput.value = '';
+                    showToast(editModeId ? 'Data berhasil diperbarui' : 'Data berhasil disimpan', false);
+                    // Reset form
                     editModeId = null;
+                    sourceInput.value = '';
+                    textInput.value = '';
                     saveBtn.textContent = 'Simpan Data';
-                    saveBtn.style.backgroundColor = '#01754f';
-                    
-                    loadDocuments();
+                    saveBtn.style.background = '#8B1E1E';
+                    loadDocuments(); // refresh tabel
                 } else {
-                    alert("Gagal memproses data ke server.");
+                    const err = await response.json();
+                    showToast(err.error || 'Gagal menyimpan data', true);
                 }
-            } catch (error) {
-                alert("Terjadi kesalahan jaringan.");
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
             }
         });
 
-        // Mengisi Form saat Tombol Edit di baris tabel di klik
-        function prepareEdit(id, source, text) {
-            editModeId = id;
-            docSourceInput.value = source;
-            docTextInput.value = text;
-            
-            saveBtn.textContent = 'Perbarui Data (Edit Mode)';
-            saveBtn.style.backgroundColor = '#f0ad4e';
-            docSourceInput.focus();
-        }
+        // ============ UPLOAD PDF ============
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const customBtn = document.getElementById('customUploadBtn');
+        const progressDiv = document.getElementById('uploadProgress');
 
-        // Fungsi Tombol Hapus
-        async function deleteDocument(id) {
-            if (!confirm("Apakah kamu yakin ingin menghapus aturan akademik ini?")) return;
-
+        async function uploadPDF(file) {
+            if (!file || file.type !== 'application/pdf') {
+                showToast('Hanya file PDF yang diperbolehkan', true);
+                return;
+            }
+            const formData = new FormData();
+            formData.append('pdf', file);
+            progressDiv.style.display = 'block';
             try {
-                const response = await fetch(`/api/documents/${id}`, { method: 'DELETE' });
+                const response = await fetch('/api/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                progressDiv.style.display = 'none';
                 if (response.ok) {
-                    loadDocuments(); 
+                    showToast('✅ PDF berhasil diunggah dan diproses AI');
+                    loadDocuments(); // refresh tabel
                 } else {
-                    alert("Gagal menghapus data.");
+                    showToast(result.error || 'Gagal mengunggah PDF', true);
                 }
-            } catch (error) {
-                alert("Terjadi kesalahan jaringan.");
+            } catch (err) {
+                progressDiv.style.display = 'none';
+                showToast('Error koneksi ke server', true);
             }
         }
 
-        function escapeHtml(text) {
-            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        }
+        // Drag & drop events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            uploadPDF(file);
+        });
+        customBtn.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
+            if (e.target.files[0]) uploadPDF(e.target.files[0]);
+        };
 
-        // Ambil data pertama kali saat halaman dibuka
+        // ============ INITIAL LOAD ============
         loadDocuments();
     </script>
 </body>

@@ -1,174 +1,205 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const Groq = require('groq-sdk');
-
-const RAGEngine = require('./lib/rag');
-const DatasetManager = require('./lib/dataset');
+const multer = require('multer');
+const { Groq } = require('groq-sdk');
+const PDFParser = require('pdf2json');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(express.static('public'));
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const ragEngine = new RAGEngine();
-const datasetManager = new DatasetManager();
+const upload = multer({ storage: multer.memoryStorage() });
 
-const CRUD_FILE_PATH = path.join(__dirname, 'data', 'crud_documents.json');
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+if (!GROQ_API_KEY) {
+    console.error('❌ GROQ_API_KEY tidak ditemukan di file .env');
+    process.exit(1);
+}
+console.log('✅ API Key terdeteksi');
+const groq = new Groq({ apiKey: GROQ_API_KEY });
 
-// MEMORI LOKAL CHATBOT
-let conversationMemory = [];
+const DATA_DIR = path.join(__dirname, 'data');
+const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(DOCS_FILE)) fs.writeFileSync(DOCS_FILE, JSON.stringify([], null, 2));
 
-function readCrudDatabase() {
-    if (!fs.existsSync(CRUD_FILE_PATH)) {
-        fs.writeFileSync(CRUD_FILE_PATH, JSON.stringify({ documents: [] }, null, 2));
+function readDocuments() { return JSON.parse(fs.readFileSync(DOCS_FILE, 'utf8')); }
+function writeDocuments(docs) { fs.writeFileSync(DOCS_FILE, JSON.stringify(docs, null, 2)); }
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 8); }
+
+// Ekstraksi PDF
+async function extractTextFromPDF(pdfBuffer) {
+    return new Promise((resolve, reject) => {
+        const pdfParser = new PDFParser();
+        let fullText = '';
+        pdfParser.on('pdfParser_dataError', reject);
+        pdfParser.on('pdfParser_dataReady', (pdfData) => {
+            try {
+                if (pdfData && pdfData.Pages) {
+                    for (const page of pdfData.Pages) {
+                        if (page.Texts) {
+                            for (const t of page.Texts) {
+                                if (t.R) {
+                                    for (const r of t.R) {
+                                        if (r.T) {
+                                            let decoded = r.T;
+                                            try { decoded = decodeURIComponent(r.T); } catch(e) {}
+                                            fullText += decoded + ' ';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        fullText += '\n\n';
+                    }
+                }
+                console.log(`📄 Halaman: ${pdfData.Pages?.length || 0}, teks: ${fullText.length} karakter`);
+                resolve(fullText.trim());
+            } catch (err) { reject(err); }
+        });
+        pdfParser.parseBuffer(pdfBuffer);
+    });
+}
+
+// Helper untuk mencari jawaban dari data manual berdasarkan kata kunci
+function findManualAnswer(message, manualDocs) {
+    const q = message.toLowerCase();
+    for (const doc of manualDocs) {
+        const text = doc.text.toLowerCase();
+        // Cek apakah pertanyaan mengandung kata kunci biaya
+        if ((q.includes('biaya') || q.includes('harga') || q.includes('uang') || q.includes('berapakah') || q.includes('berapa')) && 
+            (text.includes('biaya') || text.includes('pembayaran') || text.includes('jt') || text.includes('30') || text.includes('35'))) {
+            return doc.text;
+        }
+        // Cek apakah pertanyaan mengandung kata kunci sks
+        if ((q.includes('sks') || q.includes('lulus') || q.includes('minimal')) && 
+            (text.includes('sks') || text.includes('beban') || text.includes('144') || text.includes('160'))) {
+            return doc.text;
+        }
+        // Cek program studi
+        if ((q.includes('program studi') || q.includes('prodi')) && 
+            (text.includes('program studi') || text.includes('prodi'))) {
+            return doc.text;
+        }
+        // Fallback: jika pertanyaan mirip dengan source
+        if (q.includes(doc.source.toLowerCase())) {
+            return doc.text;
+        }
     }
-    return JSON.parse(fs.readFileSync(CRUD_FILE_PATH, 'utf8'));
+    return null;
 }
 
-function writeCrudDatabase(data) {
-    fs.writeFileSync(CRUD_FILE_PATH, JSON.stringify(data, null, 2));
-}
-
-function loadBehavior() {
-    try {
-        const behaviorFile = path.join(__dirname, 'config', 'behavior.json');
-        if (!fs.existsSync(behaviorFile)) return null;
-        return JSON.parse(fs.readFileSync(behaviorFile, 'utf8'));
-    } catch (error) { return null; }
-}
-
-// ==========================================
-// GERBANG REST API UNTUK DASHBOARD ADMIN (CRUD) - AMAN
-// ==========================================
-app.get('/api/documents', (req, res) => {
-    try { res.json(readCrudDatabase().documents); } catch (error) { res.status(500).json({ error: "Gagal." }); }
-});
-
+// CRUD
+app.get('/api/documents', (req, res) => { try { res.json(readDocuments()); } catch(e) { res.status(500).json({ error: 'Gagal baca data' }); } });
 app.post('/api/documents', (req, res) => {
     try {
         const { source, text } = req.body;
-        if (!source || !text) return res.status(400).json({ error: "Data tidak lengkap." });
-        const db = readCrudDatabase();
-        const newDoc = { id: Date.now().toString(), source, text };
-        db.documents.push(newDoc);
-        writeCrudDatabase(db);
-        res.json({ message: "Sukses!", data: newDoc });
-    } catch (error) { res.status(500).json({ error: "Gagal." }); }
+        if (!source || !text) return res.status(400).json({ error: 'Source dan text wajib diisi' });
+        const docs = readDocuments();
+        // Perkaya teks dengan kata kunci umum
+        let enhancedText = text;
+        if (text.toLowerCase().includes('biaya') || text.toLowerCase().includes('pembayaran') || text.toLowerCase().includes('jt')) {
+            enhancedText = `[INFO BIAYA] ${text} Ini informasi biaya kuliah, uang semester, pembayaran. ` + text;
+        }
+        const newDoc = { id: generateId(), source: source.trim(), text: enhancedText, type: 'manual', createdAt: new Date().toISOString() };
+        docs.push(newDoc);
+        writeDocuments(docs);
+        console.log(`📝 Dokumen manual ditambahkan: "${source}"`);
+        res.status(201).json(newDoc);
+    } catch(e) { res.status(500).json({ error: 'Gagal simpan' }); }
 });
-
 app.put('/api/documents/:id', (req, res) => {
     try {
         const { id } = req.params;
         const { source, text } = req.body;
-        const db = readCrudDatabase();
-        const idx = db.documents.findIndex(d => d.id === id);
-        if (idx === -1) return res.status(404).json({ error: "Tidak ditemukan." });
-        db.documents[idx].source = source;
-        db.documents[idx].text = text;
-        writeCrudDatabase(db);
-        res.json({ message: "Diperbarui!" });
-    } catch (error) { res.status(500).json({ error: "Gagal." }); }
+        const docs = readDocuments();
+        const idx = docs.findIndex(d => d.id === id);
+        if (idx === -1) return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
+        docs[idx].source = source.trim();
+        docs[idx].text = text.trim();
+        docs[idx].updatedAt = new Date().toISOString();
+        writeDocuments(docs);
+        res.json({ message: 'Dokumen diperbarui' });
+    } catch(e) { res.status(500).json({ error: 'Gagal update' }); }
 });
-
 app.delete('/api/documents/:id', (req, res) => {
     try {
         const { id } = req.params;
-        const db = readCrudDatabase();
-        db.documents = db.documents.filter(d => d.id !== id);
-        writeCrudDatabase(db);
-        res.json({ message: "Dihapus!" });
-    } catch (error) { res.status(500).json({ error: "Gagal." }); }
+        const docs = readDocuments();
+        const filtered = docs.filter(d => d.id !== id);
+        if (filtered.length === docs.length) return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
+        writeDocuments(filtered);
+        res.json({ message: 'Dokumen dihapus' });
+    } catch(e) { res.status(500).json({ error: 'Gagal hapus' }); }
 });
 
+// Upload PDF
+app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
+        if (req.file.mimetype !== 'application/pdf') return res.status(400).json({ error: 'Hanya file PDF' });
+        const text = await extractTextFromPDF(req.file.buffer);
+        if (!text) return res.status(400).json({ error: 'PDF tidak mengandung teks' });
+        const docs = readDocuments();
+        const newDoc = { id: generateId(), source: `PDF: ${req.file.originalname}`, text: text, type: 'pdf', originalName: req.file.originalname, createdAt: new Date().toISOString() };
+        docs.push(newDoc);
+        writeDocuments(docs);
+        console.log(`📄 PDF diproses: "${req.file.originalname}" (${text.length} karakter)`);
+        res.json({ message: 'PDF berhasil diproses', doc: newDoc });
+    } catch(err) { res.status(500).json({ error: 'Gagal proses PDF: ' + err.message }); }
+});
 
-// ==========================================
-// ENDPOINT CHATBOT AI - PERBAIKAN LOGIKA PEMISAH KONTEKS MABA VS MHS AKTIF
-// ==========================================
+// Chatbot dengan prioritas manual langsung
 app.post('/api/chat', async (req, res) => {
     try {
-        const userMessage = req.body.message;
-        if (!userMessage) return res.status(400).json({ reply: "Pesan kosong." });
+        const { message } = req.body;
+        if (!message) return res.status(400).json({ reply: 'Pesan tidak boleh kosong.' });
+        console.log(`\n📩 [USER]: ${message}`);
 
-        console.log(`[USER]: ${userMessage}`);
+        const allDocs = readDocuments();
+        if (allDocs.length === 0) return res.json({ reply: "Belum ada data. Silakan upload PDF atau admin tambah data manual." });
 
-        // Reset memori jika mendeteksi sapaan murni di awal
-        const isPureGreeting = /^(halo|p|min|test|pagi|siang|sore|malam|boleh tanya ga|permisi)$/i.test(userMessage.trim().toLowerCase());
-        if (isPureGreeting) {
-            conversationMemory = [];
+        const manualDocs = allDocs.filter(d => d.type === 'manual');
+        const pdfDocs = allDocs.filter(d => d.type === 'pdf');
+
+        // Cari jawaban dari data manual secara langsung
+        const manualAnswer = findManualAnswer(message, manualDocs);
+        if (manualAnswer) {
+            console.log(`✅ Menjawab langsung dari data manual: ${manualAnswer}`);
+            return res.json({ reply: manualAnswer });
         }
 
-        const behavior = loadBehavior();
-        const fallbackText = behavior ? behavior.fallback_response : "Maaf, data belum tersedia.";
-        const systemInstructions = behavior ? behavior.system_instructions : "Anda adalah asisten AI.";
-        const maxSentences = behavior ? behavior.max_sentences : 4;
+        // Jika tidak ada manual, gunakan AI dengan menggabungkan manual + PDF (manual di awal)
+        let allText = '';
+        for (const doc of manualDocs) allText += `[${doc.source}]\n${doc.text}\n\n`;
+        for (const doc of pdfDocs) allText += `[${doc.source}]\n${doc.text}\n\n`;
+        const MAX_LEN = 6000;
+        if (allText.length > MAX_LEN) allText = allText.substring(0, MAX_LEN);
+        console.log(`📚 Teks ke AI: ${allText.length} karakter`);
 
-        const allDocs = datasetManager.getAllDocuments();
-        const contextItems = ragEngine.retrieveContext(userMessage, allDocs);
-        const contextBlock = ragEngine.buildContextBlock(contextItems);
+        const systemPrompt = `Anda asisten SSC Telkom University Surabaya. Jawab berdasarkan teks. Jika tidak ada informasi, katakan "Maaf, informasi tidak tersedia." Maksimal 3 kalimat.
 
-        const jam = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", hour: '2-digit', hour12: false });
-        let sapaanWaktu = "malam";
-        if (jam >= 5 && jam < 11) sapaanWaktu = "pagi";
-        else if (jam >= 11 && jam < 15) sapaanWaktu = "siang";
-        else if (jam >= 15 && jam < 18) sapaanWaktu = "sore";
-
-        // PENGETATAN ATURAN LOGIKA AGAR TIDAK BLINDLY BALAS SESUAI TEKS RAG YANG SALAH SASARAN
-        const systemMessage = `${systemInstructions}
-        
-        ATURAN UTAMA PENULISAN BALASAN:
-        1. Jika pesan user HANYA berisi sapaan pendek pembuka, CUKUP balas dengan: "Selamat ${sapaanWaktu}! Ada yang bisa aku bantu terkait layanan akademik TUS?"
-        2. Perhatikan histori obrolan sebelumnya untuk memahami alur konteks (seperti kata 'bukan', 'maksudnya', 'konteks ku maba'). Jawablah secara nyambung dan logis.
-        3. DILARANG KERAS mengulang sapaan "Selamat ${sapaanWaktu}" jika obrolan sudah berjalan dalam bentuk sesi diskusi lanjutan.
-        4. EVALUASI KONTEKS SECARA KRITIS (Mencegah Halusinasi): Anda harus membedakan dengan jelas status 'Mahasiswa Baru / Calon Mahasiswa (Maba)' dengan 'Mahasiswa Aktif / Mahasiswa Tingkat Akhir (Sidang/Kelulusan)'. 
-           - JANGAN PERNAH menerapkan aturan Sidang Tugas Akhir atau Kelulusan kepada Mahasiswa Baru.
-           - Jika user menegaskan bahwa statusnya adalah Mahasiswa Baru (Maba) sedangkan 'Konteks Dokumen' yang Anda terima hanya berisi aturan EPrT/TOEFL untuk syarat kelulusan sidang, gunakan logika berpikir manusia: sampaikan dengan ramah bahwa untuk Mahasiswa Baru (proses pendaftaran/registrasi awal) TIDAK ADA persyaratan tes EPrT tersebut.
-        5. Jika informasi benar-benar tidak ada di dokumen dan tidak bisa disimpulkan secara nalar, gunakan kalimat ini: "${fallbackText}"
-        6. Jawab secara singkat, padat, ramah, dan langsung ke inti masalah maksimal ${maxSentences} kalimat.`;
-
-        const promptMessage = `Konteks Dokumen Kampus dari PDF:\n${contextBlock ? contextBlock : "KOSONG"}\n\nPesan User Saat Ini: "${userMessage}"`;
-
-        const groqMessages = [{ role: 'system', content: systemMessage }];
-        
-        conversationMemory.forEach(msg => groqMessages.push(msg));
-        groqMessages.push({ role: 'user', content: promptMessage });
+TEKS:\n${allText}`;
 
         const completion = await groq.chat.completions.create({
-            messages: groqMessages,
+            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }],
             model: 'llama-3.1-8b-instant',
-            temperature: 0.1 // Diturunkan ke 0.1 agar AI bekerja sangat kaku berdasarkan instruksi logika logika penolak kontaminasi
+            temperature: 0.2,
+            max_tokens: 350,
         });
-
-        const aiReply = completion.choices[0].message.content;
-        console.log(`[AI]: ${aiReply}`);
-
-        conversationMemory.push({ role: 'user', content: userMessage });
-        conversationMemory.push({ role: 'assistant', content: aiReply });
-        if (conversationMemory.length > 12) {
-            conversationMemory.shift();
-            conversationMemory.shift();
-        }
-
-        res.json({ reply: aiReply });
-
-    } catch (error) {
-        console.error("Error API Chat:", error.message);
-        res.status(500).json({ reply: "Maaf, server sedang mengalami gangguan." });
+        const reply = completion.choices[0].message.content;
+        console.log(`✅ [AI]: ${reply}`);
+        res.json({ reply });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ reply: 'Maaf, server error.' });
     }
 });
 
-app.use((req, res) => {
-    res.status(404).send("Halaman tidak ditemukan.");
-});
-
-app.listen(PORT, () => {
-    console.log(`=================================`);
-    console.log(`Server Berjalan Sukses! http://localhost:${PORT}`);
-    console.log(`=================================`);
-});
+app.listen(PORT, () => console.log(`✅ Server siap di http://localhost:${PORT}`));
