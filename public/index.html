@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSC Telkom University Surabaya</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">
+            <span class="logo-bold">Telkom</span> University <span class="logo-sub">Surabaya</span>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="active">Beranda</a>
+            <a href="#layanan">Layanan</a>
+            <a href="#">Tentang Kami</a>
+            <a href="login.html" class="login-nav-btn">Login Staf</a>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="hero-content">
+            <span class="badge">Layanan Terpadu Mahasiswa</span>
+            <h1>Student Service Center</h1>
+            <p>Pusat bantuan dan layanan administrasi akademik terintegrasi untuk mendukung kelancaran studi mahasiswa Telkom University Surabaya.</p>
+            <div class="hero-buttons">
+                <a href="#layanan" class="btn-primary">Lihat Layanan</a>
+                <button id="hero-chat-btn" class="btn-secondary">Tanya Asisten AI</button>
+            </div>
+        </div>
+    </header>
+
+    <section id="layanan" class="features-section">
+        <div class="section-title">
+            <h2>Layanan Akademik Utama</h2>
+            <p>Berbagai kemudahan penanganan administrasi yang dikelola secara profesional.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon">📝</div>
+                <h3>Perwalian & KRS</h3>
+                <p>Konsultasi rencana studi secara berkala bersama Dosen Wali untuk hasil studi optimal.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🌴</div>
+                <h3>Cuti Akademik</h3>
+                <p>Pengajuan izin nonaktif resmi per semester dengan prosedur yang terstruktur.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🎓</div>
+                <h3>Sidang & Kelulusan</h3>
+                <p>Pendaftaran tugas akhir, kriteria predikat kelulusan, dan pengurusan yudisium.</p>
+            </div>
+        </div>
+    </section>
+
+    <div id="chat-widget">
+        <div id="chat-header">
+            <div class="chat-title">
+                <span class="status-dot"></span> Asisten AI SSC
+            </div>
+            <span id="chat-toggle-icon">▲</span>
+        </div>
+
+        <div id="chat-body">
+            <div class="chat-messages" id="chat-messages">
+                <div class="msg bot-msg">Selamat datang! Saya Asisten AI SSC Telkom University Surabaya. Ada yang bisa saya bantu terkait layanan akademik hari ini?</div>
+            </div>
+            
+            <div class="chat-input-area">
+                <input type="text" id="user-input" placeholder="Ketik pesan..." autocomplete="off">
+                <button id="send-btn">Kirim</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Membuat tombol di hero section bisa membuka chat widget otomatis
+        document.getElementById('hero-chat-btn').addEventListener('click', () => {
+            const chatBody = document.getElementById('chat-body');
+            const chatToggleIcon = document.getElementById('chat-toggle-icon');
+            chatBody.style.display = 'flex';
+            chatToggleIcon.textContent = '▼';
+            document.getElementById('user-input').focus();
+        });
+    </script>
+</body>
+</html>

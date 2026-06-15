@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin SSC</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b31217; padding-bottom: 10px; margin-bottom: 20px; }
+        h1 { color: #b31217; margin: 0; }
+        .logout-btn { padding: 8px 15px; background-color: #555; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .crud-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-inline { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-weight: 600; font-size: 0.9rem; color: #444; }
+        .form-inline input, .form-inline textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
+        .form-inline textarea { height: 80px; resize: vertical; }
+        .save-btn { background-color: #01754f; color: white; border: none; border-radius: 4px; padding: 12px 20px; font-weight: bold; cursor: pointer; align-self: flex-start; transition: background-color 0.3s; }
+        .save-btn:hover { background-color: #005237; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-top: 10px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #0a66c2; color: white; }
+        .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; font-size: 0.85rem; }
+        .edit-btn { background-color: #f0ad4e; color: white; }
+        .edit-btn:hover { background-color: #ec971f; }
+        .delete-btn { background-color: #d9534f; color: white; }
+        .delete-btn:hover { background-color: #c9302c; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Dashboard Manajemen Dokumen SSC</h1>
+        <button class="logout-btn" id="logout-btn">Keluar</button>
+    </div>
+
+    <div class="crud-container">
+        <h3>Tambah / Edit Dokumen Akademik</h3>
+        <div class="form-inline">
+            <div class="form-group">
+                <label for="doc-source">Sumber Dokumen</label>
+                <input type="text" id="doc-source" placeholder="Contoh: Pedoman Akademik 2024 - Bab Skripsi">
+            </div>
+            <div class="form-group">
+                <label for="doc-text">Isi Konten Informasi</label>
+                <textarea id="doc-text" placeholder="Contoh: Syarat pendaftaran sidang skripsi mahasiswa adalah telah lulus minimal 138 SKS..."></textarea>
+            </div>
+            <button class="save-btn" id="save-btn">Simpan Data</button>
+        </div>
+    </div>
+
+    <h3>Daftar Informasi di Database</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Sumber Dokumen</th>
+                <th style="width: 60%;">Isi Konten Informasi</th>
+                <th style="width: 15%;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="document-table-body">
+            <tr>
+                <td colspan="3" style="text-align:center; color:#999;">Memuat data dari database...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // Proteksi Halaman: Jika belum login, tendang kembali ke halaman login
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = 'login.html';
+        });
+
+        // Variabel penanda mode Edit atau Tambah Baru
+        let editModeId = null;
+
+        const docSourceInput = document.getElementById('doc-source');
+        const docTextInput = document.getElementById('doc-text');
+        const saveBtn = document.getElementById('save-btn');
+        const tableBody = document.getElementById('document-table-body');
+
+        // Ambil Data dari Backend (Load Table)
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents');
+                const documents = await response.json();
+                
+                tableBody.innerHTML = ''; 
+
+                if(documents.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">Belum ada data aturan di database. Silakan tambah data di atas.</td></tr>`;
+                    return;
+                }
+
+                documents.forEach(doc => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${doc.source}</strong></td>
+                        <td>${doc.text}</td>
+                        <td>
+                            <button class="action-btn edit-btn" onclick="prepareEdit('${doc.id}', '${escapeHtml(doc.source)}', '${escapeHtml(doc.text)}')">Edit</button>
+                            <button class="action-btn delete-btn" onclick="deleteDocument('${doc.id}')">Hapus</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Gagal memuat tabel:", error);
+                tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">Gagal memuat data dari server.</td></tr>`;
+            }
+        }
+
+        // Fungsi Tombol Simpan (Handle Create & Update)
+        saveBtn.addEventListener('click', async () => {
+            const source = docSourceInput.value.trim();
+            const text = docTextInput.value.trim();
+
+            if (!source || !text) {
+                alert("Semua kolom input wajib diisi!");
+                return;
+            }
+
+            let url = '/api/documents';
+            let method = 'POST';
+
+            if (editModeId) {
+                url = `/api/documents/${editModeId}`;
+                method = 'PUT';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source, text })
+                });
+
+                if (response.ok) {
+                    // Reset Form
+                    docSourceInput.value = '';
+                    docTextInput.value = '';
+                    editModeId = null;
+                    saveBtn.textContent = 'Simpan Data';
+                    saveBtn.style.backgroundColor = '#01754f';
+                    
+                    loadDocuments();
+                } else {
+                    alert("Gagal memproses data ke server.");
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+            }
+        });
+
+        // Mengisi Form saat Tombol Edit di baris tabel di klik
+        function prepareEdit(id, source, text) {
+            editModeId = id;
+            docSourceInput.value = source;
+            docTextInput.value = text;
+            
+            saveBtn.textContent = 'Perbarui Data (Edit Mode)';
+            saveBtn.style.backgroundColor = '#f0ad4e';
+            docSourceInput.focus();
+        }
+
+        // Fungsi Tombol Hapus
+        async function deleteDocument(id) {
+            if (!confirm("Apakah kamu yakin ingin menghapus aturan akademik ini?")) return;
+
+            try {
+                const response = await fetch(`/api/documents/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadDocuments(); 
+                } else {
+                    alert("Gagal menghapus data.");
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // Ambil data pertama kali saat halaman dibuka
+        loadDocuments();
+    </script>
+</body>
+</html>

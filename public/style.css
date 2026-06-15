@@ -1,0 +1,328 @@
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.6;
+    scroll-behavior: smooth;
+}
+
+/* Navbar Styling */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 8%;
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
+.nav-logo {
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #444;
+}
+
+.logo-bold {
+    font-weight: 700;
+    color: #b31217; /* Maroon Telkom */
+}
+
+.logo-sub {
+    font-size: 0.9rem;
+    background: #f3f2ef;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 5px;
+    color: #666;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: #b31217;
+}
+
+.login-nav-btn {
+    background-color: #b31217;
+    color: white !important;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 600 !important;
+    transition: background-color 0.3s !important;
+}
+
+.login-nav-btn:hover {
+    background-color: #8a0e12;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+    padding: 100px 8% 120px 8%;
+    display: flex;
+    align-items: center;
+}
+
+.hero-content {
+    max-width: 650px;
+}
+
+.badge {
+    background-color: #ffebeb;
+    color: #b31217;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    color: #222;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.hero-content p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 35px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-primary {
+    text-decoration: none;
+    background-color: #0a66c2;
+    color: white;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(10, 102, 194, 0.2);
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #004182;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #333;
+    border: 2px solid #ccc;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    background-color: #f3f2ef;
+    border-color: #999;
+}
+
+/* Features Section */
+.features-section {
+    padding: 80px 8%;
+    background-color: #ffffff;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-title h2 {
+    font-size: 2rem;
+    color: #222;
+    margin-bottom: 10px;
+}
+
+.section-title p {
+    color: #666;
+}
+
+.features-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+}
+
+.feature-card {
+    background: #f8f9fa;
+    padding: 35px 25px;
+    border-radius: 8px;
+    flex: 1;
+    border: 1px solid #eee;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+.feature-card .icon {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    color: #222;
+    margin-bottom: 12px;
+}
+
+.feature-card p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* WIDGET CHAT (LinkedIn Style) */
+#chat-widget {
+    position: fixed;
+    bottom: 0;
+    right: 30px;
+    width: 340px;
+    background: #fff;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    border: 1px solid #e0e0e0;
+    border-bottom: none;
+}
+
+#chat-header {
+    background-color: #ffffff;
+    color: #333;
+    padding: 12px 20px;
+    border-radius: 10px 10px 0 0;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#chat-header:hover {
+    background-color: #f3f2ef;
+}
+
+.chat-title {
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.status-dot {
+    height: 10px;
+    width: 10px;
+    background-color: #01754f;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+#chat-body {
+    display: none;
+    flex-direction: column;
+    height: 380px;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #f3f2ef;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.bot-msg {
+    background-color: #fff;
+    align-self: flex-start;
+    border: 1px solid #e0e0e0;
+    color: #333;
+}
+
+.user-msg {
+    background-color: #0a66c2;
+    color: #fff;
+    align-self: flex-end;
+}
+
+.chat-input-area {
+    display: flex;
+    padding: 12px;
+    border-top: 1px solid #e0e0e0;
+    background: #fff;
+    align-items: center;
+}
+
+#user-input {
+    flex: 1;
+    padding: 9px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+#user-input:focus {
+    border-color: #0a66c2;
+}
+
+#send-btn {
+    background: transparent;
+    color: #0a66c2;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 12px;
+    font-size: 0.95rem;
+}
+
+#send-btn:hover {
+    color: #004182;
+}
