@@ -718,10 +718,44 @@
         toggleBtn.onclick = () => chatContainer.classList.contains('open') ? closeChatFunc() : openChat();
         closeChat.onclick = closeChatFunc;
 
-        function addMessage(text, isUser) {
+        function addMessage(text, isUser, sources = []) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${isUser ? 'user-msg' : 'bot-msg'}`;
-            msgDiv.textContent = text;
+
+            const lines = String(text).split('\n');
+            lines.forEach((line, idx) => {
+                const lineSpan = document.createElement('span');
+                lineSpan.textContent = line;
+                msgDiv.appendChild(lineSpan);
+                if (idx < lines.length - 1) {
+                    msgDiv.appendChild(document.createElement('br'));
+                }
+            });
+
+            const validSources = (sources || []).filter(source => source && source.url);
+            if (!isUser && validSources.length) {
+                msgDiv.appendChild(document.createElement('br'));
+                msgDiv.appendChild(document.createElement('br'));
+                const sourceLabel = document.createElement('div');
+                sourceLabel.style.fontWeight = '600';
+                sourceLabel.textContent = 'Sumber dokumen:';
+                msgDiv.appendChild(sourceLabel);
+
+                validSources.forEach(source => {
+                    const link = document.createElement('a');
+                    link.href = source.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = source.title || source.url;
+                    link.style.display = 'inline-block';
+                    link.style.marginTop = '0.35rem';
+                    link.style.color = '#2f5bb7';
+                    link.style.textDecoration = 'underline';
+                    msgDiv.appendChild(link);
+                    msgDiv.appendChild(document.createElement('br'));
+                });
+            }
+
             chatMessages.appendChild(msgDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -754,7 +788,7 @@
                 });
                 const data = await response.json();
                 hideTyping();
-                addMessage(data.reply || 'Maaf, saya tidak bisa menjawab.', false);
+                addMessage(data.reply || 'Maaf, saya tidak bisa menjawab.', false, data.sources || []);
             } catch (err) {
                 hideTyping();
                 addMessage('Gagal terhubung ke server AI.', false);

@@ -26,12 +26,113 @@ const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
+const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DOCS_FILE)) fs.writeFileSync(DOCS_FILE, JSON.stringify([], null, 2));
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-function readDocuments() { return JSON.parse(fs.readFileSync(DOCS_FILE, 'utf8')); }
+function normalizePdfDocument(doc) {
+    if (doc.type !== 'pdf') return doc;
+    const normalized = { ...doc };
+    const originalTitle = normalized.originalName || (typeof normalized.source === 'string' && normalized.source.startsWith('PDF: ') ? normalized.source.slice(5).trim() : '');
+    if (!normalized.originalName && originalTitle) normalized.originalName = originalTitle;
+    if (!normalized.fileName && originalTitle) normalized.fileName = sanitizeFileName(originalTitle);
+    if (!normalized.fileUrl && normalized.fileName) normalized.fileUrl = `/uploads/${normalized.fileName}`;
+    return normalized;
+}
+
+function readDocuments() {
+    const docs = JSON.parse(fs.readFileSync(DOCS_FILE, 'utf8'));
+    return docs.map(normalizePdfDocument);
+}
 function writeDocuments(docs) { fs.writeFileSync(DOCS_FILE, JSON.stringify(docs, null, 2)); }
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 8); }
+
+function sanitizeFileName(name) {
+    return name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+}
+
+function normalizeSearchText(text) {
+    return (text || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function getSearchTerms(message) {
+    const normalized = normalizeSearchText(message);
+    const stopWords = new Set(['apa', 'itu', 'yang', 'dan', 'atau', 'pada', 'dari', 'untuk', 'dengan', 'dalam', 'adalah', 'berapa', 'bagaimana', 'jelaskan', 'sebutkan', 'tidak', 'boleh']);
+    const terms = normalized.split(/\s+/).filter(term => term.length > 2 && !stopWords.has(term));
+    const aliases = [
+        { triggers: ['skpi'], terms: ['skpi', 'surat', 'keterangan', 'pendamping', 'ijazah'], replace: true },
+        { triggers: ['eprt'], terms: ['eprt', 'english', 'proficiency', 'test'], replace: true },
+        { triggers: ['berhenti kuliah sementara', 'rehat kuliah', 'nonaktif sementara'], terms: ['cuti', 'akademik', 'mengambil'], replace: true },
+        { triggers: ['dokumen setelah lulus', 'dokumen kelulusan'], terms: ['ijazah', 'transkrip', 'skpi', 'pendamping'], replace: true },
+        { triggers: ['pujian'], terms: ['cumlaude', 'cum', 'laude', 'predikat', 'lulusan'], replace: true },
+        { triggers: ['siap kerja'], terms: ['work', 'ready', 'programs', 'wrap'], replace: true }
+    ];
+
+    for (const alias of aliases) {
+        if (alias.triggers.some(trigger => normalized.includes(trigger))) {
+            if (alias.replace) return [...new Set(alias.terms)];
+            terms.push(...alias.terms);
+        }
+    }
+
+    return [...new Set(terms)];
+}
+
+function getQueryHint(message) {
+    const normalized = normalizeSearchText(message);
+    if (normalized.includes('berhenti kuliah sementara') || normalized.includes('rehat kuliah') || normalized.includes('nonaktif sementara')) {
+        return 'Catatan: pertanyaan tentang berhenti kuliah sementara merujuk pada istilah "cuti akademik" di dokumen.';
+    }
+    if (normalized.includes('dokumen setelah lulus') || normalized.includes('dokumen kelulusan')) {
+        return 'Catatan: pertanyaan tentang dokumen setelah lulus merujuk pada ijazah, transkrip akademik, dan SKPI.';
+    }
+    if (normalized.includes('siap kerja')) {
+        return 'Catatan: pertanyaan tentang program siap kerja merujuk pada WRAP atau Work Ready Programs.';
+    }
+    return '';
+}
+
+function isUnavailableReply(reply) {
+    const normalized = normalizeSearchText(reply);
+    return normalized.includes('maaf informasi tidak tersedia')
+        || normalized.includes('informasi tidak tersedia')
+        || normalized.includes('tidak bisa menjawab');
+}
+
+function splitIntoChunks(text, chunkSize = 1200, overlap = 200) {
+    const chunks = [];
+    for (let start = 0; start < text.length; start += chunkSize - overlap) {
+        chunks.push(text.substring(start, start + chunkSize));
+    }
+    return chunks;
+}
+
+function findRelevantPdfChunks(message, pdfDocs) {
+    const terms = getSearchTerms(message);
+    if (!pdfDocs.length || !terms.length) return [];
+
+    const scoredChunks = [];
+    for (const doc of pdfDocs) {
+        const title = normalizeSearchText(doc.title || doc.originalName || doc.source || '');
+        for (const chunk of splitIntoChunks(doc.text || '')) {
+            const normalizedChunk = normalizeSearchText(chunk);
+            let score = 0;
+
+            for (const term of terms) {
+                if (normalizedChunk.includes(term)) score += term.length > 4 ? 3 : 2;
+                if (title.includes(term)) score += 2;
+            }
+
+            if (terms.length > 1 && terms.every(term => normalizedChunk.includes(term))) score += 12;
+            if (normalizedChunk.includes(terms.join(' '))) score += 8;
+            if (score > 0 && normalizedChunk.includes('adalah')) score += 5;
+            if (score > 0) scoredChunks.push({ doc, text: chunk, score });
+        }
+    }
+
+    return scoredChunks.sort((a, b) => b.score - a.score).slice(0, 5);
+}
 
 // Ekstraksi PDF
 async function extractTextFromPDF(pdfBuffer) {
@@ -144,46 +245,93 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
         if (req.file.mimetype !== 'application/pdf') return res.status(400).json({ error: 'Hanya file PDF' });
+
+        const originalName = path.basename(req.file.originalname);
+        const safeName = sanitizeFileName(originalName);
+        let fileName = safeName || `document-${generateId()}.pdf`;
+        let filePath = path.join(UPLOAD_DIR, fileName);
+        let counter = 1;
+        while (fs.existsSync(filePath)) {
+            const ext = path.extname(safeName);
+            const base = path.basename(safeName, ext);
+            fileName = `${base}-${counter}${ext}`;
+            filePath = path.join(UPLOAD_DIR, fileName);
+            counter += 1;
+        }
+
+        fs.writeFileSync(filePath, req.file.buffer);
         const text = await extractTextFromPDF(req.file.buffer);
-        if (!text) return res.status(400).json({ error: 'PDF tidak mengandung teks' });
+        if (!text) {
+            fs.unlinkSync(filePath);
+            return res.status(400).json({ error: 'PDF tidak mengandung teks' });
+        }
+
+        const fileUrl = `/uploads/${fileName}`;
         const docs = readDocuments();
-        const newDoc = { id: generateId(), source: `PDF: ${req.file.originalname}`, text: text, type: 'pdf', originalName: req.file.originalname, createdAt: new Date().toISOString() };
+        const newDoc = {
+            id: generateId(),
+            title: originalName,
+            originalName,
+            fileName,
+            fileUrl,
+            source: `PDF: ${originalName}`,
+            text,
+            type: 'pdf',
+            createdAt: new Date().toISOString()
+        };
         docs.push(newDoc);
         writeDocuments(docs);
-        console.log(`📄 PDF diproses: "${req.file.originalname}" (${text.length} karakter)`);
+        console.log(`📄 PDF diproses: "${originalName}" (${text.length} karakter)`);
         res.json({ message: 'PDF berhasil diproses', doc: newDoc });
-    } catch(err) { res.status(500).json({ error: 'Gagal proses PDF: ' + err.message }); }
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Gagal proses PDF: ' + err.message });
+    }
 });
 
 // Chatbot dengan prioritas manual langsung
 app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
-        if (!message) return res.status(400).json({ reply: 'Pesan tidak boleh kosong.' });
+        if (!message) return res.status(400).json({ reply: 'Pesan tidak boleh kosong.', sources: [] });
         console.log(`\n📩 [USER]: ${message}`);
 
         const allDocs = readDocuments();
-        if (allDocs.length === 0) return res.json({ reply: "Belum ada data. Silakan upload PDF atau admin tambah data manual." });
+        if (allDocs.length === 0) return res.json({ reply: "Belum ada data. Silakan upload PDF atau admin tambah data manual.", sources: [] });
 
         const manualDocs = allDocs.filter(d => d.type === 'manual');
         const pdfDocs = allDocs.filter(d => d.type === 'pdf');
 
-        // Cari jawaban dari data manual secara langsung
         const manualAnswer = findManualAnswer(message, manualDocs);
         if (manualAnswer) {
             console.log(`✅ Menjawab langsung dari data manual: ${manualAnswer}`);
-            return res.json({ reply: manualAnswer });
+            return res.json({ reply: manualAnswer, sources: [] });
         }
 
-        // Jika tidak ada manual, gunakan AI dengan menggabungkan manual + PDF (manual di awal)
+        const relevantPdfChunks = findRelevantPdfChunks(message, pdfDocs);
+        const contextDocs = [...manualDocs];
+
         let allText = '';
-        for (const doc of manualDocs) allText += `[${doc.source}]\n${doc.text}\n\n`;
-        for (const doc of pdfDocs) allText += `[${doc.source}]\n${doc.text}\n\n`;
+        const queryHint = getQueryHint(message);
+        if (queryHint) allText += `${queryHint}\n\n`;
+        for (const item of relevantPdfChunks) {
+            const label = `PDF: ${item.doc.title || item.doc.originalName || item.doc.source}`;
+            allText += `[${label}]\n${item.text}\n\n`;
+        }
+        for (const doc of contextDocs) {
+            const label = doc.type === 'pdf' ? `PDF: ${doc.title || doc.originalName}` : doc.source;
+            allText += `[${label}]\n${doc.text}\n\n`;
+        }
+        if (!allText && pdfDocs.length) {
+            const doc = pdfDocs[0];
+            allText = `[PDF: ${doc.title || doc.originalName || doc.source}]\n${(doc.text || '').substring(0, 6000)}`;
+        }
+
         const MAX_LEN = 6000;
         if (allText.length > MAX_LEN) allText = allText.substring(0, MAX_LEN);
         console.log(`📚 Teks ke AI: ${allText.length} karakter`);
 
-        const systemPrompt = `Anda asisten SSC Telkom University Surabaya. Jawab berdasarkan teks. Jika tidak ada informasi, katakan "Maaf, informasi tidak tersedia." Maksimal 3 kalimat.
+        const systemPrompt = `Anda adalah asisten SSC Telkom University Surabaya. Jawab pertanyaan berdasarkan teks yang diberikan. Jika informasi tidak tersedia, jawab "Maaf, informasi tidak tersedia." Gunakan data dokumen yang relevan dan jangan menambahkan informasi di luar konteks.
 
 TEKS:\n${allText}`;
 
@@ -193,12 +341,18 @@ TEKS:\n${allText}`;
             temperature: 0.2,
             max_tokens: 350,
         });
-        const reply = completion.choices[0].message.content;
+        const reply = completion.choices?.[0]?.message?.content || 'Maaf, saya tidak bisa menjawab.';
+        const selectedSourceDocs = [...new Map(relevantPdfChunks.map(item => [item.doc.id || item.doc.fileUrl || item.doc.source, item.doc])).values()];
+        const sources = isUnavailableReply(reply) ? [] : selectedSourceDocs.map(doc => ({
+            title: doc.title || doc.originalName || doc.fileName,
+            url: doc.fileUrl || (doc.fileName ? `/uploads/${doc.fileName}` : null),
+            type: 'pdf'
+        })).filter(src => src.url);
         console.log(`✅ [AI]: ${reply}`);
-        res.json({ reply });
+        res.json({ reply, sources });
     } catch(err) {
         console.error(err);
-        res.status(500).json({ reply: 'Maaf, server error.' });
+        res.status(500).json({ reply: 'Maaf, server error.', sources: [] });
     }
 });
 
