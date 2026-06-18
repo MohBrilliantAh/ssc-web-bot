@@ -3,3 +3,4 @@ data/*.json
 .env
 .DS_Store
 *.log
+public/uploads/
