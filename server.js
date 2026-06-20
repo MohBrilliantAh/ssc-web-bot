@@ -31,6 +31,9 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DOCS_FILE)) fs.writeFileSync(DOCS_FILE, JSON.stringify([], null, 2));
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
+// MEMORI LOKAL CHATBOT (Ditambahkan kembali agar AI tidak amnesia)
+let conversationMemory = [];
+
 function normalizePdfDocument(doc) {
     if (doc.type !== 'pdf') return doc;
     const normalized = { ...doc };
@@ -100,7 +103,7 @@ function isUnavailableReply(reply) {
         || normalized.includes('tidak bisa menjawab');
 }
 
-function splitIntoChunks(text, chunkSize = 1200, overlap = 200) {
+function splitIntoChunks(text, chunkSize = 2500, overlap = 400) {
     const chunks = [];
     for (let start = 0; start < text.length; start += chunkSize - overlap) {
         chunks.push(text.substring(start, start + chunkSize));
@@ -134,7 +137,7 @@ function findRelevantPdfChunks(message, pdfDocs) {
     return scoredChunks.sort((a, b) => b.score - a.score).slice(0, 5);
 }
 
-// Ekstraksi PDF
+// 2. Ekstraksi PDF dengan Algoritma Penyelamat Format Tabel (Y-X Coordinate Mapping)
 async function extractTextFromPDF(pdfBuffer) {
     return new Promise((resolve, reject) => {
         const pdfParser = new PDFParser();
@@ -144,23 +147,40 @@ async function extractTextFromPDF(pdfBuffer) {
             try {
                 if (pdfData && pdfData.Pages) {
                     for (const page of pdfData.Pages) {
+                        // Mengelompokkan teks berdasarkan posisi Y (baris tabel)
+                        const rows = {};
                         if (page.Texts) {
                             for (const t of page.Texts) {
+                                // Gunakan pembulatan posisi Y agar teks yang sejajar dianggap satu baris
+                                const yPos = Math.round(t.y * 2) / 2;
+                                if (!rows[yPos]) rows[yPos] = [];
+                                
                                 if (t.R) {
                                     for (const r of t.R) {
                                         if (r.T) {
                                             let decoded = r.T;
                                             try { decoded = decodeURIComponent(r.T); } catch(e) {}
-                                            fullText += decoded + ' ';
+                                            // Simpan teks beserta posisi X (kolom tabel)
+                                            rows[yPos].push({ x: t.x, text: decoded.trim() });
                                         }
                                     }
                                 }
                             }
                         }
+                        
+                        // Susun ulang teks dari atas ke bawah (Y), lalu kiri ke kanan (X)
+                        const sortedY = Object.keys(rows).sort((a, b) => parseFloat(a) - parseFloat(b));
+                        for (const y of sortedY) {
+                            // Urutkan data dalam satu baris berdasarkan kolom (X)
+                            const rowItems = rows[y].sort((a, b) => a.x - b.x);
+                            // Gabungkan teks dalam satu baris menggunakan pembatas " | " agar AI paham itu tabel
+                            const rowText = rowItems.map(item => item.text).join(' | ');
+                            fullText += rowText + '\n';
+                        }
                         fullText += '\n\n';
                     }
                 }
-                console.log(`📄 Halaman: ${pdfData.Pages?.length || 0}, teks: ${fullText.length} karakter`);
+                console.log(`📄 PDF berhasil direkonstruksi dengan format tabel. Total: ${fullText.length} karakter`);
                 resolve(fullText.trim());
             } catch (err) { reject(err); }
         });
@@ -289,12 +309,46 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
     }
 });
 
-// Chatbot dengan prioritas manual langsung
+// ==========================================
+// ENDPOINT CHATBOT AI (Fix Sapaan & Memori Konteks)
+// ==========================================
 app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
         if (!message) return res.status(400).json({ reply: 'Pesan tidak boleh kosong.', sources: [] });
         console.log(`\n📩 [USER]: ${message}`);
+
+        // 1. CEK SAPAAN (Menghindari RAG & Sumber PDF muncul di awal percakapan)
+        const isPureGreeting = /^(halo|p|min|test|pagi|siang|sore|malam|boleh tanya|permisi|hai|aku|saya|perkenalkan|nama)\b/i.test(message.trim().toLowerCase());
+        
+        if (isPureGreeting) {
+            // Reset memori jika sapaan sangat pendek
+            if (/^(halo|p|min|test|pagi|siang|sore|malam)$/i.test(message.trim().toLowerCase())) {
+                conversationMemory = []; 
+            }
+            const jam = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", hour: '2-digit', hour12: false });
+            let sapaanWaktu = "malam";
+            if (jam >= 5 && jam < 11) sapaanWaktu = "pagi";
+            else if (jam >= 11 && jam < 15) sapaanWaktu = "siang";
+            else if (jam >= 15 && jam < 18) sapaanWaktu = "sore";
+
+            const reply = `Selamat ${sapaanWaktu}! Halo, saya asisten AI SSC Telkom University Surabaya. Ada yang bisa saya bantu terkait layanan akademik hari ini?`;
+            
+            conversationMemory.push({ role: 'user', content: message });
+            conversationMemory.push({ role: 'assistant', content: reply });
+            
+            // Langsung kembalikan balasan tanpa sumber dokumen
+            return res.json({ reply, sources: [] }); 
+        }
+
+        // 2. CONTEXTUAL QUERY EXPANSION (Menggabungkan pesan agar nyambung, misal: "biaya semester nya")
+        let searchQuery = message;
+        if (conversationMemory.length > 0) {
+            const lastUserMsg = [...conversationMemory].reverse().find(msg => msg.role === 'user');
+            if (lastUserMsg) {
+                searchQuery = `${lastUserMsg.content} ${message}`;
+            }
+        }
 
         const allDocs = readDocuments();
         if (allDocs.length === 0) return res.json({ reply: "Belum ada data. Silakan upload PDF atau admin tambah data manual.", sources: [] });
@@ -302,17 +356,21 @@ app.post('/api/chat', async (req, res) => {
         const manualDocs = allDocs.filter(d => d.type === 'manual');
         const pdfDocs = allDocs.filter(d => d.type === 'pdf');
 
-        const manualAnswer = findManualAnswer(message, manualDocs);
+        // Cari jawaban di data manual menggunakan searchQuery (bukan message biasa)
+        const manualAnswer = findManualAnswer(searchQuery, manualDocs);
         if (manualAnswer) {
             console.log(`✅ Menjawab langsung dari data manual: ${manualAnswer}`);
+            conversationMemory.push({ role: 'user', content: message });
+            conversationMemory.push({ role: 'assistant', content: manualAnswer });
             return res.json({ reply: manualAnswer, sources: [] });
         }
 
-        const relevantPdfChunks = findRelevantPdfChunks(message, pdfDocs);
+        // Cari di chunk PDF menggunakan searchQuery
+        const relevantPdfChunks = findRelevantPdfChunks(searchQuery, pdfDocs);
         const contextDocs = [...manualDocs];
 
         let allText = '';
-        const queryHint = getQueryHint(message);
+        const queryHint = getQueryHint(searchQuery);
         if (queryHint) allText += `${queryHint}\n\n`;
         for (const item of relevantPdfChunks) {
             const label = `PDF: ${item.doc.title || item.doc.originalName || item.doc.source}`;
@@ -322,32 +380,46 @@ app.post('/api/chat', async (req, res) => {
             const label = doc.type === 'pdf' ? `PDF: ${doc.title || doc.originalName}` : doc.source;
             allText += `[${label}]\n${doc.text}\n\n`;
         }
-        if (!allText && pdfDocs.length) {
-            const doc = pdfDocs[0];
-            allText = `[PDF: ${doc.title || doc.originalName || doc.source}]\n${(doc.text || '').substring(0, 6000)}`;
-        }
+        
+        // (KODE LAMA MILIK KEVIN YANG MENYEBABKAN HALUSINASI PDF DIHAPUS DARI SINI)
 
         const MAX_LEN = 6000;
         if (allText.length > MAX_LEN) allText = allText.substring(0, MAX_LEN);
         console.log(`📚 Teks ke AI: ${allText.length} karakter`);
 
-        const systemPrompt = `Anda adalah asisten SSC Telkom University Surabaya. Jawab pertanyaan berdasarkan teks yang diberikan. Jika informasi tidak tersedia, jawab "Maaf, informasi tidak tersedia." Gunakan data dokumen yang relevan dan jangan menambahkan informasi di luar konteks.
+        const systemPrompt = `Anda adalah asisten SSC Telkom University Surabaya. Jawab pertanyaan berdasarkan teks yang diberikan secara ramah dan natural. Jika informasi tidak tersedia di teks, JANGAN MENGARANG, cukup jawab "Maaf, informasi tidak tersedia." Gunakan data dokumen yang relevan saja.
 
 TEKS:\n${allText}`;
 
+        // Menggabungkan Memori ke dalam Prompt Groq
+        const groqMessages = [{ role: 'system', content: systemPrompt }];
+        conversationMemory.forEach(msg => groqMessages.push(msg));
+        groqMessages.push({ role: 'user', content: message });
+
         const completion = await groq.chat.completions.create({
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }],
+            messages: groqMessages,
             model: 'llama-3.1-8b-instant',
-            temperature: 0.2,
+            temperature: 0.1, // Suhu diturunkan drastis agar tidak mengarang jawaban
             max_tokens: 350,
         });
+        
         const reply = completion.choices?.[0]?.message?.content || 'Maaf, saya tidak bisa menjawab.';
+        
+        // Update Memori
+        conversationMemory.push({ role: 'user', content: message });
+        conversationMemory.push({ role: 'assistant', content: reply });
+        if (conversationMemory.length > 12) {
+            conversationMemory.shift();
+            conversationMemory.shift();
+        }
+
         const selectedSourceDocs = [...new Map(relevantPdfChunks.map(item => [item.doc.id || item.doc.fileUrl || item.doc.source, item.doc])).values()];
         const sources = isUnavailableReply(reply) ? [] : selectedSourceDocs.map(doc => ({
             title: doc.title || doc.originalName || doc.fileName,
             url: doc.fileUrl || (doc.fileName ? `/uploads/${doc.fileName}` : null),
             type: 'pdf'
         })).filter(src => src.url);
+        
         console.log(`✅ [AI]: ${reply}`);
         res.json({ reply, sources });
     } catch(err) {
