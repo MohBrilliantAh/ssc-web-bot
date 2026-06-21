@@ -1,0 +1,33 @@
+Question,ROUGE-1 F1,ROUGE-2 F1,ROUGE-L F1
+Bagaimana cara mengajukan berkas yudisium?,0.8966,0.8889,0.8966
+Berapa lama proses pengajuan berkas yudisium?,0.8,0.7778,0.8
+Bagaimana cara mengajukan perpanjangan SK Tugas Akhir?,0.8421,0.7222,0.8421
+Berapa lama proses perpanjangan SK Tugas Akhir?,0.8182,0.8,0.8182
+Bagaimana cara memperbarui SK Tugas Akhir?,0.8333,0.7059,0.8333
+Berapa lama proses pembaruan SK Tugas Akhir?,0.8182,0.8,0.8182
+Bagaimana cara mengajukan Kerja Praktik?,0.8696,0.7273,0.8696
+Berapa lama proses pengajuan Kerja Praktik?,0.7778,0.75,0.7778
+Apa itu Kerja Praktik?,1.0,1.0,1.0
+Bagaimana cara mengajukan Surat Keterangan Alumni?,1.0,1.0,1.0
+Berapa lama proses Surat Keterangan Alumni?,0.8,0.7778,0.8
+Bagaimana cara mengajukan perubahan data ijazah?,0.8276,0.7407,0.8276
+Berapa lama proses perubahan data ijazah?,0.8,0.7778,0.8
+Bagaimana cara mengajukan surat pengantar mata kuliah?,0.9524,0.8421,0.9524
+Berapa lama proses surat pengantar mata kuliah?,0.8182,0.8,0.8182
+Bagaimana cara meminjam ruang kelas selama masa perkuliahan?,0.8387,0.7586,0.8387
+Berapa lama proses peminjaman ruang kelas?,0.8,0.7778,0.8
+Bagaimana cara melakukan pembayaran sewa toga wisuda?,0.9655,0.8889,0.9655
+Berapa lama proses pembayaran sewa toga wisuda?,0.8182,0.8,0.8182
+Bagaimana cara reset akun iGracias orang tua?,0.9697,0.9032,0.9697
+Berapa lama proses reset akun iGracias orang tua?,0.8333,0.8182,0.8333
+Bagaimana cara mengajukan perubahan data mahasiswa?,0.7059,0.5333,0.7059
+Berapa lama proses perubahan data mahasiswa?,0.8,0.7778,0.8
+Bagaimana cara mengajukan surat keterangan aktif mahasiswa?,0.9677,0.9655,0.9677
+Apa syarat surat keterangan aktif mahasiswa?,0.973,0.9143,0.973
+Berapa lama proses surat keterangan aktif mahasiswa?,0.8182,0.8,0.8182
+Bagaimana cara mengajukan legalisir ijazah dan transkrip nilai?,0.8387,0.7586,0.8387
+Berapa lama proses legalisir ijazah dan transkrip?,0.8462,0.8333,0.8462
+Apa itu Tel-U Care?,1.0,1.0,1.0
+Berapa lama proses layanan Tel-U Care?,0.8,0.7778,0.8
+Bagaimana cara mengajukan surat pengantar tugas akhir?,0.9697,0.9032,0.9697
+Berapa lama proses surat pengantar tugas akhir?,0.8182,0.8,0.8182
