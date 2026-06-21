@@ -24,12 +24,23 @@ if (!GROQ_API_KEY) {
 console.log('✅ API Key terdeteksi');
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
-const DATA_DIR = path.join(__dirname, 'data');
+// ==========================================
+// BYPASS VERCEL SERVERLESS FOLDER (/tmp)
+// ==========================================
+const isVercel = process.env.VERCEL === '1';
+
+const DATA_DIR = isVercel ? path.join('/tmp', 'data') : path.join(__dirname, 'data');
 const DOCS_FILE = path.join(DATA_DIR, 'documents.json');
-const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(DOCS_FILE)) fs.writeFileSync(DOCS_FILE, JSON.stringify([], null, 2));
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const UPLOAD_DIR = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'public', 'uploads');
+
+try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(DOCS_FILE)) fs.writeFileSync(DOCS_FILE, JSON.stringify([], null, 2));
+    if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (error) {
+    console.warn('⚠️ Mode Serverless Vercel: Lewati pembuatan folder permanen.');
+}
+// ==========================================
 
 // MEMORI LOKAL CHATBOT (Ditambahkan kembali agar AI tidak amnesia)
 let conversationMemory = [];
@@ -45,8 +56,13 @@ function normalizePdfDocument(doc) {
 }
 
 function readDocuments() {
-    const docs = JSON.parse(fs.readFileSync(DOCS_FILE, 'utf8'));
-    return docs.map(normalizePdfDocument);
+    try {
+        const docs = JSON.parse(fs.readFileSync(DOCS_FILE, 'utf8'));
+        return docs.map(normalizePdfDocument);
+    } catch (error) {
+        // Jika file tidak ada di /tmp (Vercel reset), kembalikan array kosong tanpa error
+        return [];
+    }
 }
 function writeDocuments(docs) { fs.writeFileSync(DOCS_FILE, JSON.stringify(docs, null, 2)); }
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 8); }
