@@ -1,0 +1,3 @@
+https://ssc-web-bot-zeta.vercel.app
+
+Dikarenakan kami build awal dengan menggunakan maka versi vercel tidak bisa kami push pada GitHub yang sama dikarenakan akan bentrok dengan versi locally.}
